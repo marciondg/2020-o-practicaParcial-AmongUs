@@ -1,9 +1,11 @@
+import nave.*
+import tareas_sabotajes_items.*
 class Jugador{
 	const color
 	const mochila = []
 	var property sospecha = 40
 	const tareasPendientes = []
-	//Usar item de mochila. (mochila.contains(item)) -> mochila.remove(item) luego del uso.
+	var property expulsado = false
 	method esSospechoso () = sospecha>50
 	method buscarItem(item){
 		mochila.add(item)
@@ -20,9 +22,17 @@ class Jugador{
 		//Se completa en las clases hijas 
 	}
 	
+	method llamarVotacionEmergencia(){
+		nave.iniciarVotacion()
+	}
+	method votar(){
+		if(expulsado)
+			self.error("No puede votar por estar eliminado")
+	}
 }
 
 class Tripulante inherits Jugador{
+	var property personalidad
 	method modificarSospecha(cantidad){
 		sospecha+=cantidad
 	}
@@ -37,7 +47,12 @@ class Tripulante inherits Jugador{
 			self.error("No se puede realizar la tarea")
 		}
 	method terminoSusTareas() = tareasPendientes.isEmpty()
+	override method votar(){
+		super()
+		personalidad.voto()
+	}
 }
+
 class Impostor inherits Jugador{
 	method terminoSusTareas() = true
 	
@@ -46,55 +61,27 @@ class Impostor inherits Jugador{
 	method sabotear(sabotaje,afectado){
 		sabotaje.realizarSabotaje(afectado)
 	}
+	override method votar(){
+		super()
+		nave.votoAlAzar()
+	}
 }
 
-object nave{
-	var oxigeno
-	const jugadores= []
-	//method impostores()=jugadores.filter({jugador=>jugador.vivo() jugador.esImpostor()})
-	//method tripulantes()= jugadores.filter({jugador=>jugador.vivo() jugador.esTripulante()})
-	method modificarOxigeno(cantidad){
-		oxigeno+=cantidad
-		self.verificarOxigeno()
-	}
-	method revisarTareas(){
-		if(self.todosTerminaronLasTareas())
-			self.error("Ganaron los tripulantes")
-	}
-	method todosTerminaronLasTareas() = jugadores.all({jugador=>jugador.terminoSusTareas()})
-	method verificarOxigeno(){
-		if(oxigeno<=0)
-			self.error("Ganaron los impostores")
-	}
-	method alguienConTuboOxigeno() = jugadores.any({jugador=>jugador.tiene(tuboOxigeno)})
-}
-//Tareas
-object arreglarTableroElectrico{
-	method cumpleRequerimiento(tripulante) = tripulante.tiene(llaveInglesa)
-	method realizarTarea(tripulante,nave) = tripulante.modificarSospecha(10)
-}
-object sacarLaBasura{
-	method cumpleRequerimiento(tripulante) = tripulante.tiene(escoba) && tripulante.tiene(bolsaConsorcio)
-	method realizarTarea(tripulante,nave) = tripulante.modificarSospecha(-5)
-}
-object ventilarNave{
-	method cumpleRequerimiento(tripulante) = true
-	method realizarTarea(tripulante,nave) = nave.modificarOxigeno(5)
-}
-//Items
-object llaveInglesa{}
-object bolsaConsorcio{}
-object escoba{}
-object tuboOxigeno{}
-//Sabotaje
-object reducirOxigeno{
-	method realizarSabotaje(afectado){
-		if(!nave.alguienConTuboOxigeno())
-			nave.modificarOxigeno(-10)
+
+
+//Personalidades
+object troll {
+	method voto(){
+		nave.votoTroll()
 	}
 }
-object impugnarJugador{
-	method realizarSabotaje(afectado){
-		afectado.obligadoAVotarEnBlanco()
+object detective{
+	method voto(){
+		nave.votoAlMasSospechoso()
+	}
+}
+object materialista{
+	method voto(){
+		nave.votoMaterialista()
 	}
 }
